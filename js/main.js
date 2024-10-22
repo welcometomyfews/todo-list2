@@ -44,71 +44,12 @@ class TodoManager {
     uiManager.showAllTodos();
   }
 
-  async addTodo(task, dueDate) {
-    const newTodo = {
-      task: this.todoItemFormatter.formatTask(task),
-      dueDate: this.todoItemFormatter.formatDueDate(dueDate),
-      completed: false,
-      status: "pending",
-    };
-    const docRef = await db.collection("todos").add(newTodo);
-    newTodo.id = docRef.id;
-    this.todos.push(newTodo);
-    return newTodo;
+  getRandomId() {
+    return (
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15)
+    );
   }
-
-  async editTodo(id, updatedTask) {
-    await db.collection("todos").doc(id).update({ task: updatedTask });
-    const todo = this.todos.find((t) => t.id === id);
-    if (todo) {
-      todo.task = updatedTask;
-    }
-    return todo;
-  }
-
-  async deleteTodo(id) {
-    await db.collection("todos").doc(id).delete();
-    this.todos = this.todos.filter((todo) => todo.id !== id);
-  }
-
-  async toggleTodoStatus(id) {
-    const todo = this.todos.find((t) => t.id === id);
-    if (todo) {
-      todo.completed = !todo.completed;
-      await db.collection("todos").doc(id).update({ completed: todo.completed });
-    }
-  }
-
-  async clearAllTodos() {
-    const batch = db.batch();
-    this.todos.forEach((todo) => {
-      const docRef = db.collection("todos").doc(todo.id);
-      batch.delete(docRef);
-    });
-    await batch.commit();
-    this.todos = [];
-  }
-
-  filterTodos(status) {
-    switch (status) {
-      case "all":
-        return this.todos;
-      case "pending":
-        return this.todos.filter((todo) => !todo.completed);
-      case "completed":
-        return this.todos.filter((todo) => todo.completed);
-      default:
-        return [];
-    }
-  }
-}
-  
-    getRandomId() {
-      return (
-        Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15)
-      );
-    }
   
     saveToLocalStorage() {
       localStorage.setItem("todos", JSON.stringify(this.todos));
