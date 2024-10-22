@@ -51,9 +51,60 @@ class TodoManager {
     );
   }
   
-    saveToLocalStorage() {
-      localStorage.setItem("todos", JSON.stringify(this.todos));
+  saveToLocalStorage() {
+    localStorage.setItem("todos", JSON.stringify(this.todos));
+  }
+
+  addTodo(task, dueDate) {
+    return new Promise((resolve) => {
+      const newTodo = {
+        id: this.getRandomId(),
+        task: task,
+        dueDate: dueDate,
+        completed: false
+      };
+      this.todos.push(newTodo);
+      this.saveToLocalStorage();
+      resolve();
+    });
+  }
+
+  deleteTodo(id) {
+    return new Promise((resolve) => {
+      this.todos = this.todos.filter((todo) => todo.id !== id);
+      this.saveToLocalStorage();
+      resolve();
+    });
+  }
+
+  toggleTodoStatus(id) {
+    return new Promise((resolve) => {
+      const todo = this.todos.find((todo) => todo.id === id);
+      if (todo) {
+        todo.completed = !todo.completed;
+        this.saveToLocalStorage();
+      }
+      resolve();
+    });
+  }
+
+  clearAllTodos() {
+    return new Promise((resolve) => {
+      this.todos = [];
+      this.saveToLocalStorage();
+      resolve();
+    });
+  }
+
+  filterTodos(status) {
+    if (status === "completed") {
+      return this.todos.filter((todo) => todo.completed);
+    } else if (status === "pending") {
+      return this.todos.filter((todo) => !todo.completed);
     }
+    return this.todos;
+  }
+} // <-- ปิดวงเล็บคลาส TodoManager
 
 // Class responsible for managing the UI and handling events
 class UIManager {
@@ -213,45 +264,43 @@ class UIManager {
 
 // Class responsible for managing the theme switcher
 class ThemeSwitcher {
-constructor(themes, html) {
-  this.themes = themes;
-  this.html = html;
-  this.init();
-}
-
-init() {
-  const theme = this.getThemeFromLocalStorage();
-  if (theme) {
-    this.setTheme(theme);
+  constructor(themes, html) {
+    this.themes = themes;
+    this.html = html;
+    this.init();
   }
 
-  this.addThemeEventListeners();
-}
+  init() {
+    const theme = this.getThemeFromLocalStorage();
+    if (theme) {
+      this.setTheme(theme);
+    }
 
-addThemeEventListeners() {
-  this.themes.forEach((theme) => {
-    theme.addEventListener("click", () => {
-      const themeName = theme.getAttribute("theme");
-      this.setTheme(themeName);
-      this.saveThemeToLocalStorage(themeName);
+    this.addThemeEventListeners();
+  }
+
+  addThemeEventListeners() {
+    this.themes.forEach((theme) => {
+      theme.addEventListener("click", () => {
+        const themeName = theme.getAttribute("theme");
+        this.setTheme(themeName);
+        this.saveThemeToLocalStorage(themeName);
+      });
     });
-  });
-}
+  }
 
-setTheme(themeName) {
-  this.html.setAttribute("data-theme", themeName);
-}
+  setTheme(themeName) {
+    this.html.setAttribute("data-theme", themeName);
+  }
 
-saveThemeToLocalStorage(themeName) {
-  localStorage.setItem("theme", themeName);
-}
+  saveThemeToLocalStorage(themeName) {
+    localStorage.setItem("theme", themeName);
+  }
 
-getThemeFromLocalStorage() {
-  return localStorage.getItem("theme");
+  getThemeFromLocalStorage() {
+    return localStorage.getItem("theme");
+  }
 }
-}
-
-
 
 // Instantiating the classes
 const todoItemFormatter = new TodoItemFormatter();
