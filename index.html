@@ -90,11 +90,31 @@
             </ul>
         </div>
     </div>
-    <!-- Firebase -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
-    <!-- JS -->
-    <script src="js/main.js"></script>
+    <!-- Add Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBY_1eBY5KQc-3mITZ7iybYAg8hey0HYnQ",
+            authDomain: "fewstodo.firebaseapp.com",
+            projectId: "fewstodo",
+            storageBucket: "fewstodo.appspot.com",
+            messagingSenderId: "1060448609394",
+            appId: "1:1060448609394:web:600b7619a7cc1939460eeb",
+            measurementId: "G-DBGN5WWDZF"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Now you can use db in your main.js file or other scripts
+    </script>
+
+    <!-- Add your JavaScript file -->
+    <script type="module" src="main.js"></script>
 
 </body>
 </html>
