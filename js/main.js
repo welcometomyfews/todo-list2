@@ -1,18 +1,3 @@
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBY_1eBY5KQc-3mITZ7iybYAg8hey0HYnQ",
-  authDomain: "fewstodo.firebaseapp.com",
-  projectId: "fewstodo",
-  storageBucket: "fewstodo.appspot.com",
-  messagingSenderId: "1060448609394",
-  appId: "1:1060448609394:web:600b7619a7cc1939460eeb",
-  measurementId: "G-DBGN5WWDZF"
-};
-
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
 // Abstract class for TodoItemFormatter
 class TodoItemFormatter {
   formatTask(task) {
