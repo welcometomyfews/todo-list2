@@ -1,11 +1,12 @@
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBY_1eBY5KQc-3mITZ7iybYAg8hey0HYnQ",
+  authDomain: "fewstodo.firebaseapp.com",
+  projectId: "fewstodo",
+  storageBucket: "fewstodo.appspot.com",
+  messagingSenderId: "1060448609394",
+  appId: "1:1060448609394:web:600b7619a7cc1939460eeb",
+  measurementId: "G-DBGN5WWDZF"
 };
 
 // Initialize Firebase
@@ -30,64 +31,77 @@ class TodoItemFormatter {
 // Class responsible for managing Todo items
 class TodoManager {
   constructor(todoItemFormatter) {
-    this.todos = JSON.parse(localStorage.getItem("todos")) || [];
+    this.todos = [];
     this.todoItemFormatter = todoItemFormatter;
+    this.loadTodosFromFirestore(); // Load todos from Firebase
   }
 
-  addTodo(task, dueDate) {
+  async loadTodosFromFirestore() {
+    const querySnapshot = await db.collection("todos").get();
+    querySnapshot.forEach((doc) => {
+      this.todos.push({ id: doc.id, ...doc.data() });
+    });
+    uiManager.showAllTodos();
+  }
+
+  async addTodo(task, dueDate) {
     const newTodo = {
-      id: this.getRandomId(),
       task: this.todoItemFormatter.formatTask(task),
       dueDate: this.todoItemFormatter.formatDueDate(dueDate),
       completed: false,
       status: "pending",
     };
+    const docRef = await db.collection("todos").add(newTodo);
+    newTodo.id = docRef.id;
     this.todos.push(newTodo);
-    this.saveToLocalStorage();
     return newTodo;
   }
 
-  editTodo(id, updatedTask) {
-      const todo = this.todos.find((t) => t.id === id);
-      if (todo) {
-        todo.task = updatedTask;
-        this.saveToLocalStorage();
-      }
-      return todo;
+  async editTodo(id, updatedTask) {
+    await db.collection("todos").doc(id).update({ task: updatedTask });
+    const todo = this.todos.find((t) => t.id === id);
+    if (todo) {
+      todo.task = updatedTask;
     }
-  
-    deleteTodo(id) {
-      this.todos = this.todos.filter((todo) => todo.id !== id);
-      this.saveToLocalStorage();
+    return todo;
+  }
+
+  async deleteTodo(id) {
+    await db.collection("todos").doc(id).delete();
+    this.todos = this.todos.filter((todo) => todo.id !== id);
+  }
+
+  async toggleTodoStatus(id) {
+    const todo = this.todos.find((t) => t.id === id);
+    if (todo) {
+      todo.completed = !todo.completed;
+      await db.collection("todos").doc(id).update({ completed: todo.completed });
     }
-  
-    toggleTodoStatus(id) {
-      const todo = this.todos.find((t) => t.id === id);
-      if (todo) {
-        todo.completed = !todo.completed;
-        this.saveToLocalStorage();
-      }
+  }
+
+  async clearAllTodos() {
+    const batch = db.batch();
+    this.todos.forEach((todo) => {
+      const docRef = db.collection("todos").doc(todo.id);
+      batch.delete(docRef);
+    });
+    await batch.commit();
+    this.todos = [];
+  }
+
+  filterTodos(status) {
+    switch (status) {
+      case "all":
+        return this.todos;
+      case "pending":
+        return this.todos.filter((todo) => !todo.completed);
+      case "completed":
+        return this.todos.filter((todo) => todo.completed);
+      default:
+        return [];
     }
-  
-    clearAllTodos() {
-      if (this.todos.length > 0) {
-        this.todos = [];
-        this.saveToLocalStorage();
-      }
-    }
-  
-    filterTodos(status) {
-      switch (status) {
-        case "all":
-          return this.todos;
-        case "pending":
-          return this.todos.filter((todo) => !todo.completed);
-        case "completed":
-          return this.todos.filter((todo) => todo.completed);
-        default:
-          return [];
-      }
-    }
+  }
+}
   
     getRandomId() {
       return (
@@ -113,36 +127,36 @@ class UIManager {
     this.alertMessage = document.querySelector(".alert-message");
     this.deleteAllBtn = document.querySelector(".delete-all-btn");
 
-  this.addEventListeners();
-  this.showAllTodos();
+    this.addEventListeners();
+    this.showAllTodos(); // Show todos after Firebase data is loaded
   }
 
   addEventListeners() {
-      // Event listener for adding a new todo
-      this.addBtn.addEventListener("click", () => {
-          this.handleAddTodo();
-      });
+    // Event listener for adding a new todo
+    this.addBtn.addEventListener("click", () => {
+      this.handleAddTodo();
+    });
 
-      // Event listener for pressing Enter key in the task input
-      this.taskInput.addEventListener("keyup", (e) => {
-          if (e.keyCode === 13 && this.taskInput.value.length > 0) {
-              this.handleAddTodo();
-          }
-      });
+    // Event listener for pressing Enter key in the task input
+    this.taskInput.addEventListener("keyup", (e) => {
+      if (e.keyCode === 13 && this.taskInput.value.length > 0) {
+        this.handleAddTodo();
+      }
+    });
 
-      // Event listener for deleting all todos
-      this.deleteAllBtn.addEventListener("click", () => {
-          this.handleClearAllTodos();
-      });
+    // Event listener for deleting all todos
+    this.deleteAllBtn.addEventListener("click", () => {
+      this.handleClearAllTodos();
+    });
 
-      // Event listeners for filter buttons
-      const filterButtons = document.querySelectorAll(".todos-filter li");
-      filterButtons.forEach((button) => {
-          button.addEventListener("click", () => {
-              const status = button.textContent.toLowerCase();
-              this.handleFilterTodos(status);
-          });
+    // Event listeners for filter buttons
+    const filterButtons = document.querySelectorAll(".todos-filter li");
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const status = button.textContent.toLowerCase();
+        this.handleFilterTodos(status);
       });
+    });
   }
 
   handleAddTodo() {
@@ -151,117 +165,110 @@ class UIManager {
     if (task === "") {
       this.showAlertMessage("Please enter a task", "error");
     } else {
-      const newTodo = this.todoManager.addTodo(task, dueDate);
-      this.showAllTodos();
-      this.taskInput.value = "";
-      this.dateInput.value = "";
-      this.showAlertMessage("Task added successfully", "success");
+      this.todoManager.addTodo(task, dueDate).then(() => {
+        this.showAllTodos();
+        this.taskInput.value = "";
+        this.dateInput.value = "";
+        this.showAlertMessage("Task added successfully", "success");
+      });
     }
   }
 
   handleClearAllTodos() {
-    this.todoManager.clearAllTodos();
-    this.showAllTodos();
-    this.showAlertMessage("All todos cleared successfully", "success");
+    this.todoManager.clearAllTodos().then(() => {
+      this.showAllTodos();
+      this.showAlertMessage("All todos cleared successfully", "success");
+    });
   }
 
   showAllTodos() {
+    // Get all todos from TodoManager and display them
     const todos = this.todoManager.filterTodos("all");
     this.displayTodos(todos);
   }
 
   displayTodos(todos) {
+    this.todosListBody.innerHTML = "";
 
-      this.todosListBody.innerHTML = "";
-      
-      if (todos.length === 0) {
-          this.todosListBody.innerHTML = `<tr><td colspan="5" class="text-center">No task found</td></tr>`;
-          return;
-        }
-        
-      todos.forEach((todo) => {
-        this.todosListBody.innerHTML += `
-          <tr class="todo-item" data-id="${todo.id}">
-            <td>${this.todoItemFormatter.formatTask(todo.task)}</td>
-            <td>${this.todoItemFormatter.formatDueDate(todo.dueDate)}</td>
-            <td>${this.todoItemFormatter.formatStatus(todo.completed)}</td>
-            <td>
-              <button class="btn btn-warning btn-sm" onclick="uiManager.handleEditTodo('${
-                todo.id
-              }')">
-                <i class="bx bx-edit-alt bx-bx-xs"></i>    
-              </button>
-              <button class="btn btn-success btn-sm" onclick="uiManager.handleToggleStatus('${
-                todo.id
-              }')">
-                <i class="bx bx-check bx-xs"></i>
-              </button>
-              <button class="btn btn-error btn-sm" onclick="uiManager.handleDeleteTodo('${
-                todo.id
-              }')">
-                <i class="bx bx-trash bx-xs"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      });
+    if (todos.length === 0) {
+      this.todosListBody.innerHTML = `<tr><td colspan="5" class="text-center">No task found</td></tr>`;
+      return;
     }
-    
 
-  
-handleEditTodo(id) {
-  const todo = this.todoManager.todos.find((t) => t.id === id);
-  if (todo) {
-    this.taskInput.value = todo.task;
-    this.todoManager.deleteTodo(id);
-
-    const handleUpdate = () => {
-      this.addBtn.innerHTML = "<i class='bx bx-plus bx-sm'></i>";
-      this.showAlertMessage("Todo updated successfully", "success");
-      this.showAllTodos();
-      this.addBtn.removeEventListener("click", handleUpdate);
-    };
-
-    this.addBtn.innerHTML = "<i class='bx bx-check bx-sm'></i>";
-    this.addBtn.addEventListener("click", handleUpdate);
+    todos.forEach((todo) => {
+      this.todosListBody.innerHTML += `
+        <tr class="todo-item" data-id="${todo.id}">
+          <td>${this.todoItemFormatter.formatTask(todo.task)}</td>
+          <td>${this.todoItemFormatter.formatDueDate(todo.dueDate)}</td>
+          <td>${this.todoItemFormatter.formatStatus(todo.completed)}</td>
+          <td>
+            <button class="btn btn-warning btn-sm" onclick="uiManager.handleEditTodo('${todo.id}')">
+              <i class="bx bx-edit-alt bx-bx-xs"></i>
+            </button>
+            <button class="btn btn-success btn-sm" onclick="uiManager.handleToggleStatus('${todo.id}')">
+              <i class="bx bx-check bx-xs"></i>
+            </button>
+            <button class="btn btn-error btn-sm" onclick="uiManager.handleDeleteTodo('${todo.id}')">
+              <i class="bx bx-trash bx-xs"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
   }
-}
 
+  handleEditTodo(id) {
+    const todo = this.todoManager.todos.find((t) => t.id === id);
+    if (todo) {
+      this.taskInput.value = todo.task;
+      this.todoManager.deleteTodo(id);
 
-handleToggleStatus(id) {
-this.todoManager.toggleTodoStatus(id);
-this.showAllTodos();
-}
+      const handleUpdate = () => {
+        this.addBtn.innerHTML = "<i class='bx bx-plus bx-sm'></i>";
+        this.showAlertMessage("Todo updated successfully", "success");
+        this.showAllTodos();
+        this.addBtn.removeEventListener("click", handleUpdate);
+      };
 
-handleDeleteTodo(id) {
-this.todoManager.deleteTodo(id);
-this.showAlertMessage("Todo deleted successfully", "success");
-this.showAllTodos();
-}
+      this.addBtn.innerHTML = "<i class='bx bx-check bx-sm'></i>";
+      this.addBtn.addEventListener("click", handleUpdate);
+    }
+  }
 
+  handleToggleStatus(id) {
+    this.todoManager.toggleTodoStatus(id).then(() => {
+      this.showAllTodos();
+    });
+  }
 
-handleFilterTodos(status) {
-  const filteredTodos = this.todoManager.filterTodos(status);
-  this.displayTodos(filteredTodos);
-}
+  handleDeleteTodo(id) {
+    this.todoManager.deleteTodo(id).then(() => {
+      this.showAlertMessage("Todo deleted successfully", "success");
+      this.showAllTodos();
+    });
+  }
 
+  handleFilterTodos(status) {
+    const filteredTodos = this.todoManager.filterTodos(status);
+    this.displayTodos(filteredTodos);
+  }
 
-showAlertMessage(message, type) {
-const alertBox = `
-  <div class="alert alert-${type} shadow-lg mb-5 w-full">
-    <div>
-      <span>${message}</span>
-    </div>
-  </div>
-`;
-this.alertMessage.innerHTML = alertBox;
-this.alertMessage.classList.remove("hide");
-this.alertMessage.classList.add("show");
-setTimeout(() => {
-  this.alertMessage.classList.remove("show");
-  this.alertMessage.classList.add("hide");
-}, 3000);
-}
+  showAlertMessage(message, type) {
+    const alertBox = `
+      <div class="alert alert-${type} shadow-lg mb-5 w-full">
+        <div>
+          <span>${message}</span>
+        </div>
+      </div>
+    `;
+    this.alertMessage.innerHTML = alertBox;
+    this.alertMessage.classList.remove("hide");
+    this.alertMessage.classList.add("show");
+    setTimeout(() => {
+      this.alertMessage.classList.remove("show");
+      this.alertMessage.classList.add("hide");
+    }, 3000);
+  }
 }
 
 // Class responsible for managing the theme switcher
