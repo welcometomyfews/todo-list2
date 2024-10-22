@@ -113,7 +113,6 @@ class TodoManager {
     saveToLocalStorage() {
       localStorage.setItem("todos", JSON.stringify(this.todos));
     }
-}
 
 // Class responsible for managing the UI and handling events
 class UIManager {
